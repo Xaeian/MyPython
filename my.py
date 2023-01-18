@@ -7,6 +7,7 @@ from IPython import get_ipython
 from pathlib import Path
 import codecs
 import re
+import zipfile
 
 #---------------------------------------------------------------------------------------------------------------------- List
 
@@ -58,11 +59,13 @@ def toList(content:any):
 #---------------------------------------------------------------------------------------------------------------------- <--- files
 class folder:
   @staticmethod
-  def MakeSure(path:str):
+  def create(path:str):
     Path(path).mkdir(parents=True, exist_ok=True)
   
   @staticmethod
-  def Clear(path:str):
+  def clear(path:str):
+    if not os.path.exists(path):
+      return
     for filename in os.listdir(path):
       file = os.path.join(path, filename)
       try:
@@ -71,11 +74,27 @@ class folder:
         elif os.path.isdir(file):
           shutil.rmtree(file)
       except Exception as e:
-        print('Failed to delete %s. Reason: %s' % (file, e))
-
+        print('Failed to delete %s. Reason: %s' % (file, e)) # todo log
+          
   @staticmethod
-  def Delete(path:str):
-    folder.Clear(path)
+  def toZip(path:str, name:str, withFolder=False):
+    if not os.path.exists(path):
+      return
+    name = name.removesuffix(".zip") + ".zip"
+    with zipfile.ZipFile(name, "w", zipfile.ZIP_DEFLATED) as zipf: 
+      for root, dirs, files in os.walk(path):
+        for file in files:
+          zipf.write(
+            os.path.join(root, file),
+            os.path.relpath(os.path.join(root, file), 
+            os.path.join(path, ".." if withFolder else "."))
+          )
+          
+  @staticmethod
+  def delete(path:str):
+    if not os.path.exists(path):
+      return
+    folder.clear(path)
     shutil.rmtree(path)
 
 class file:
@@ -108,7 +127,7 @@ class file:
 
   @staticmethod
   def Save(name:str, string:str):
-    folder.MakeSure(os.path.dirname(name))
+    folder.create(os.path.dirname(name))
     openFile = codecs.open(name, "w+", "utf-8")
     openFile.write(string)
     openFile.close()
@@ -124,7 +143,7 @@ class file:
   @staticmethod
   def binSave(name:str, data:bytes):
     name = name.removesuffix('.bin') + '.bin'
-    folder.MakeSure(os.path.dirname(name))
+    folder.create(os.path.dirname(name))
     openFile = codecs.open(name, "wb+", "utf-8")
     openFile.write(data)
     openFile.close()

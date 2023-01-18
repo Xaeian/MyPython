@@ -55,7 +55,7 @@ class Markdown:
     heading_align, cell_align = [x for x in zip(*extended_align)]
 
     field_widths = [len(max(column, key=len)) if len(column) > 0 else 0
-            for column in columns]
+      for column in columns]
     heading_widths = [max(len(head), 2) for head in headings]
     column_widths = [max(x) for x in zip(field_widths, heading_widths)]
 
@@ -65,7 +65,7 @@ class Markdown:
     row_template = "| " + _ + " |"
 
     _ = " | ".join([left_rule[a] + "-"*(w-2) + right_rule[a]
-            for a, w in zip(cell_align, column_widths)])
+      for a, w in zip(cell_align, column_widths)])
     ruling = "| " + _ + " |"
 
     md = heading_template.format(*headings).rstrip() + "\n"

@@ -42,8 +42,19 @@ class _DatabaseSQL:
   
   def getRow(self, sql:str) -> tuple:
     array = self.getArray(sql)
+    return array[0] if array else None
+  
+  def getDict(self, sql:str) -> dict:
+    dicts = self.getDicts(sql)
+    return dicts[0] if dicts else None
+  
+  def getColumn(self, sql:str) -> tuple:
+    array = self.getArray(sql)
     if(array):
-      return array[0]
+      column = []
+      for row in array:
+        column.append(row[0])
+      return column
     return None
   
   def getValue(self, sql:str) -> str:
