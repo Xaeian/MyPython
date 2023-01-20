@@ -8,8 +8,9 @@ from pathlib import Path
 import codecs
 import re
 import zipfile
+from PIL import Image
 
-#---------------------------------------------------------------------------------------------------------------------- List
+#------------------------------------------------------------------------------ List
 
 def nbrRange(value:float|int, minv:float|int, maxv:float|int):
   return minv if value < minv else maxv if value > maxv else value
@@ -56,7 +57,49 @@ def toList(content:any):
   else:
     return [content]
 
-#---------------------------------------------------------------------------------------------------------------------- <--- files
+#------------------------------------------------------------------------------ files
+
+# for e.g.
+# my.imageCompress(src="./image.jpg", prefix="compress-", scale=0.5, quality=30)
+def imageCompress(
+    src:str,
+    dsc:str="",
+    prefix:str="",
+    suffix:str="",
+    quality:int=100,
+    optimize:bool=True,
+    scale:int=0,
+    width:int=0,
+    height:int=0,
+    format:str=""
+  ):
+  img = Image.open(src)
+  resize = True
+  if scale:
+    width, height = img.size[0] * scale, img.size[1] * scale
+  elif width:
+    height = int(width * img.size[1] / img.size[0])
+  elif height:
+    width = int(height * img.size[0] / img.size[1])
+  else:
+    resize = False
+  if resize:
+    img = img.resize((width, height),Image.Resampling.LANCZOS)
+  if prefix or suffix:
+    dir = os.path.dirname(src)
+    name, ext = os.path.splitext(os.path.basename(src))
+    dsc = dir + "/" + prefix + name + suffix + ext
+  if not format:
+    name, ext = os.path.splitext(os.path.basename(dsc))
+    format = ext.lstrip(".")
+  
+    
+  format = format.upper()
+  format = "JPEG" if format == "JPG" else format
+  # print(format)
+  # exit()
+  img.save(dsc, format, optimize=optimize, quality=quality)
+
 class folder:
   @staticmethod
   def create(path:str):
@@ -75,7 +118,14 @@ class folder:
           shutil.rmtree(file)
       except Exception as e:
         print('Failed to delete %s. Reason: %s' % (file, e)) # todo log
-          
+  
+  @staticmethod
+  def delete(path:str):
+    if not os.path.exists(path):
+      return
+    folder.clear(path)
+    shutil.rmtree(path)
+    
   @staticmethod
   def toZip(path:str, name:str, withFolder=False):
     if not os.path.exists(path):
@@ -89,13 +139,52 @@ class folder:
             os.path.relpath(os.path.join(root, file), 
             os.path.join(path, ".." if withFolder else "."))
           )
-          
+  
   @staticmethod
-  def delete(path:str):
-    if not os.path.exists(path):
-      return
-    folder.clear(path)
-    shutil.rmtree(path)
+  def through(scr:str, dsc:str, fnc):
+    for name in os.listdir(scr):
+      scrf = scr + "/" + name
+      dscf = dsc + "/" + name
+      if os.path.isfile(scrf):
+        fnc(scrf, dscf)
+      else:
+        if not os.path.exists(dscf):
+          os.makedirs(dscf)
+        folder.through(scrf, dscf, fnc)
+
+  @staticmethod
+  def copy(scr:str, dsc:str):
+    folder.through(scr, dsc, shutil.copy)
+
+  def imageCompress(
+    scr:str,
+    dsc:str,
+    exts:list[str],
+    quality:int=100,
+    optimize:bool=True,
+    scale:int=0,
+    width:int=0,
+    height:int=0
+  ):
+    def fnc(fsrc:str, fdsc:str):
+      if(exts):
+        go = False
+        for ext in exts:
+          if fsrc.lower().endswith("." + ext):
+            go = True
+      else:
+        go = True
+      if go:
+        imageCompress(
+          src=fsrc,
+          dsc=fdsc,
+          quality=quality,
+          optimize=optimize,
+          scale=scale,
+          width=width,
+          height=height
+        )
+    folder.through(scr, dsc, fnc)
 
 class file:
   @staticmethod
@@ -201,7 +290,7 @@ class file:
         ini[section][key] = value
       else:
         ini[key] = value
-    return ini      
+    return ini     
     
   @staticmethod
   def csvLoad(name, delimiter=",") -> list:
