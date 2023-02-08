@@ -1,6 +1,5 @@
-from stdlib import *
-from datetime import datetime
 import serial
+from datetime import datetime
 
 class cbash:
   def __init__(self, com:str, bps:int=115200, timeout:float=0.2, pack_size:int=128, buffer_size:int=1024):
@@ -27,7 +26,7 @@ class cbash:
     else:
       return False
 
-  def Send(self, msg:str or bytes) -> bool:
+  def Send(self, msg:str|bytes) -> bool:
     print(msg)
     if type(msg) is str:
       self.serial.write(bytes(msg, 'utf-8'))
@@ -40,7 +39,7 @@ class cbash:
     else:
       return False
 
-  def SendGetLine(self, msg:str or bytes) -> list:
+  def SendGetLine(self, msg:str|bytes) -> list:
     print(msg)
     if type(msg) is str:
       self.serial.write(bytes(msg, 'utf-8'))
@@ -50,7 +49,7 @@ class cbash:
     print(">> " + res)
     return res.split(" ")
   
-  def SendGetValues(self, msg:str or bytes) -> dict:
+  def SendGetValues(self, msg:str|bytes) -> dict:
     line = self.SendGetLine(msg)
     res = {}
     for kv in line:
@@ -59,7 +58,7 @@ class cbash:
         res[kv[0]] = float(kv[1])
     return res
 
-  def SendGetMap(self, msg:str or bytes) -> list:
+  def SendGetMap(self, msg:str|bytes) -> list:
     print(msg)
     if type(msg) is str:
       self.serial.write(bytes(msg, 'utf-8'))
@@ -75,7 +74,7 @@ class cbash:
       arr[val[1]] = int(val[0])
     return arr
 
-  def SendGetBytes(self, msg:str or bytes) -> bytes:
+  def SendGetBytes(self, msg:str|bytes) -> bytes:
     print(msg)
     if type(msg) is str:
       self.serial.write(bytes(msg, 'utf-8'))
@@ -125,7 +124,6 @@ class cbash:
       tmp = cbash.SendGetLine(self, "FILE cache " + str(self.files[fileName]))
       size = int(tmp[2].split("/")[0])
       pack = int((size + (self.pack_size - 1)) / self.pack_size)
-
       for i in range(pack):
         offset = i * self.pack_size
         res += cbash.SendGetBytes(self, "FILE load " + str(self.pack_size) + " " + str(offset))
