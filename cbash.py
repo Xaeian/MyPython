@@ -1,7 +1,9 @@
 import serial
 from datetime import datetime
+from time import time
 from colorama import Fore, Style
 import serial.tools.list_ports
+from crc import CRC
 
 def serial_list():
   ports = serial.tools.list_ports.comports()
@@ -10,180 +12,191 @@ def serial_list():
     devs.append(port.device)
   return devs
 
-class cbash:
+class CBash:
+  color = {
+    "read": "\033[39m",
+    "send": "\033[90m",
+    "resp": "\033[97m",
+    "head": "\033[33m",
+    "value": "\033[34m",
+    "time": "\033[36m",
+    "conn": "\033[35m",
+    "ok": "\033[32m",
+    "error": "\033[31m",
+    "reset": "\033[00m"
+  }
   
-  colorRead = "\033[39m"
-  colorRequest = "\033[90m"
-  colorResponse = "\033[97m"
+  def Preview(self, text:str|bytes, color:str, head:bool=False, values:bool=False):
+    if text:
+      text = str(text)
+      if self.timeDisp:
+        now = datetime.utcnow() if self.timeUTC else datetime.now()
+        strtime = now.strftime(self.timeFormat)
+      if self.colored:
+        if self.timeDisp: strtime = CBash.color["time"] + strtime + " " + color
+        words = text.split(" ")
+        if head: text = CBash.color["head"] + words.pop(0) + " " + color
+        else: text = color
+        for word in words:
+          if values and ":" in word:
+            keyvalue = word.split(":")
+            text += keyvalue[0] + ":" + CBash.color["value"] + keyvalue[1] + " " + color
+          else: text += word + " "
+        text = text[:-1] + CBash.color["reset"]
+      if self.timeDisp: text = strtime + text
+      if self.disp: print(text)
+      if self.callback: self.callback(text)
   
-  def Preview(self, text:str|bytes, color:str):
-    text = str(text)
-    if self.colored:
-      text = color + text + "\033[00m"
-    if self.disp:
-      print(text)
-    if self.callback:
-      self.callback(text)
-  
-  def ModPreview(self, text:str|bytes, color:str):
-    text = str(text)
-    if self.colored:
-      words = text.split()
-      text = "\033[33m" + words.pop(0) + "\033[39m "
-      for word in words:
-        text += word + " "
-      text = text[:-1]
-    if self.disp:
-      print(text)
-    if self.callback:
-      self.callback(text)
+  def Error(self, text:str):
+    text = "ERROR " + text if text else "ERROR"
+    self.Preview(text, CBash.color["error"])
+    
+  def Ok(self, text:str):
+    text = "OK " + text if text else "OK"
+    self.Preview(text, CBash.color["ok"])
   
   def __init__(
       self,
-      com:str,
+      port:str,
       bps:int=115200,
       timeout:float=0.2,
       pack_size:int=128,
       buffer_size:int=1024,
       disp:bool=True,
       callback=None,
-      colored:bool=True
+      colored:bool=True,
+      timeDisp:bool=False,
+      timeUTC:bool=False,
+      timeFormat:str="%Y-%m-%d %H:%M:%S",      
+      address:int|None=None, # TODO
+      crc:CRC|None=None # TODO
+      # TODO: display time with format
     ):
-    self.com = com
-    self.serial = serial.Serial(com, bps, timeout=timeout)
+    self.port = port
+    self.serial = serial.Serial(port, bps, timeout=timeout)
     self.pack_size = pack_size
     self.buffer_size = buffer_size
     self.disp = disp
     self.callback = callback
     self.colored = colored
+    self.timeDisp = timeDisp
+    self.timeUTC = timeUTC
+    self.timeFormat = timeFormat
     self.files = dict()
-    self.Preview(f"Connect {self.com}", "\033[35m")
+    self.Preview(f"Connect {self.port}", CBash.color["conn"])
 
   def Disconnect(self):
     self.serial.close()
-    self.Preview(f"Disconnect {self.com}", "\033[35m")
+    self.Preview(f"Disconnect {self.port}", CBash.color["conn"])
     self.serial.close()
+    
+  def Flush(self):
+    self.serial.flushInput()
+    self.serial.flushOutput()
 
   def Read(self) -> str:
     res = self.serial.read(self.buffer_size).decode("utf-8").strip()
-    self.Preview(res, cbash.colorRead)
+    self.Preview(res, CBash.color["read"])
     return res
 
   def ReadLine(self) -> str:
     res = self.serial.readline(self.buffer_size).decode("utf-8").strip()
-    self.Preview(res, cbash.colorRead)
+    self.Preview(res, CBash.color["read"])
     return res
-  
-  def ReadBool(self) -> bool:
-    res = self.serial.read(self.buffer_size).decode("utf-8").strip().replace("\r\n", "\r\n-> ")
-    if(res):
-      self.Preview(res, cbash.colorRead)
-      return True
-    else:
-      return False
-
-  def Send(self, msg:str|bytes) -> bool:
-    self.Preview(msg, cbash.colorRequest)
-    if type(msg) is str:
-      self.serial.write(bytes(msg, 'utf-8'))
-    else:
-      self.serial.write(msg)
-    res = self.serial.read(self.buffer_size).decode("utf-8").strip().replace("\r\n", "\r\n>> ")
-    if(res):
-      self.ModPreview(res, cbash.colorResponse)
-      return True
-    else:
-      return False
-
-  def SendGetLine(self, msg:str|bytes) -> list:
-    self.Preview(msg, cbash.colorRequest)
-    if type(msg) is str:
-      self.serial.write(bytes(msg, 'utf-8'))
-    else:
-      self.serial.write(msg)
-    res = self.serial.read(self.buffer_size).decode("utf-8").strip()
-    self.ModPreview(res, cbash.colorResponse)
-    return res.split(" ")
-  
-  def SendGetValues(self, msg:str|bytes) -> dict:
-    line = self.SendGetLine(msg)
-    res = {}
-    for kv in line:
-      if ":" in kv:
-        kv = kv.split(":")
-        res[kv[0]] = float(kv[1])
-    return res
-
-  def SendGetMap(self, msg:str|bytes) -> list:
-    self.Preview(msg, cbash.colorRequest)
-    if type(msg) is str:
-      self.serial.write(bytes(msg, 'utf-8'))
-    else:
-      self.serial.write(msg)
-    res = self.serial.read(self.buffer_size).decode("utf-8").strip().replace("\r\n", "\n").split("\n")
-    self.ModPreview(res[0], cbash.colorResponse)
-    del res[0]
-    arr = dict()
-    for val in res:
-      self.Preview(val, cbash.colorResponse)
-      val = val.strip().split(":")
-      arr[val[1]] = int(val[0])
-    return arr
-
-  def SendGetBytes(self, msg:str|bytes) -> bytes:
-    self.Preview(msg, cbash.colorRequest)
-    if type(msg) is str:
-      self.serial.write(bytes(msg, 'utf-8'))
-    else:
-      self.serial.write(msg)
+    
+  def LoadBytes(self, msg:str|bytes) -> bytes:
+    self.Preview(msg, CBash.color["send"])
+    msg = bytes(msg, 'utf-8') if type(msg) is str else msg
+    self.serial.write(msg)
     return self.serial.read(self.buffer_size)
 
-  def Ping(self) -> bool:
-    res = cbash.SendGetLine(self, "PING")
-    if len(res)==2 and res[0] == "PING" and res[1] == "pong":
-      return True
-    else:
-      return False
+  def Send(self, send:str|bytes) -> bool:
+    res = self.LoadBytes(send).decode("utf-8").strip()
+    self.Preview(res, CBash.color["resp"], head=True)
+    return True if res else False
+  
+  def WaitFor(self, send:str|bytes, sec:float, expect:str) -> bool: # error
+    self.Send(send)
+    timeout = time() + sec
+    while not self.ReadLine().startswith(expect):
+      if time() > timeout: return True
+    return False
+
+  def LoadList(self, send:str|bytes) -> list:
+    res = self.LoadBytes(send).decode("utf-8").strip()
+    self.Preview(res, CBash.color["resp"], head=True, values=True)
+    return res.split(" ")
+  
+  def LoadDict(self, send:str|bytes) -> dict:
+    values = self.LoadList(send)
+    res = {}
+    for keyvalue in values:
+      if ":" in keyvalue:
+        keyvalue = keyvalue.split(":")
+        res[keyvalue[0]] = float(keyvalue[1])
+    return res
+
+  def LoadMap(self, send:str|bytes) -> dict:
+    res = self.LoadBytes(send).decode("utf-8").strip().replace("\r\n", "\n").split("\n")
+    self.Preview(res[0], CBash.color["resp"], head=True)
+    del res[0]
+    array = dict()
+    for value in res:
+      self.Preview(value, CBash.color["resp"], values=True)
+      value = value.strip().split(":")
+      array[value[1]] = int(value[0])
+    return array
+
+  def Ping(self) -> bool: # error
+    res = CBash.LoadList(self, "PING")
+    return False if len(res) == 2 and res[0] == "PING" and res[1] == "pong" else True
 
   def Uid(self) -> bool:
-    res = cbash.SendGetLine(self, "UID")
+    res = CBash.LoadList(self, "UID")
     return bytes.fromhex(res[1])
 
   def FileList(self) -> dict:
-    self.files = cbash.SendGetMap(self, "FILE list")
+    self.files = CBash.LoadMap(self, "FILE list")
     return self.files
 
-  def FileSave(self, fileName:str, msg:str or bytes):
+  def FileSave(self, fileName:str, msg:str|bytes):
     if fileName in self.files:
-      tmp = cbash.SendGetLine(self, "FILE cache " + str(self.files[fileName]))
+      tmp = CBash.LoadList(self, "FILE cache " + str(self.files[fileName]))
       size = int(tmp[2].split("/")[1])
       if len(msg) > size:
-        cbash.Error("file-size")
+        self.Error("file-size")
       pack = int((len(msg) + (self.pack_size - 1)) / self.pack_size)
-      cbash.SendGetLine(self, "FILE save " + str(pack))
-
+      CBash.LoadList(self, "FILE save " + str(pack))
       for i in range(pack):
         start = i * self.pack_size
         stop = (i + 1) * self.pack_size
         if stop > len(msg):
           stop = len(msg)
-        cbash.Send(self, msg[start:stop])
+        CBash.Send(self, msg[start:stop])
 
-  def FileLoadString(self, fileName:str) -> str:
-    return cbash.FileLoadBytes(self, fileName).decode("utf-8")
-    
   def FileLoadBytes(self, fileName:str) -> bytes:
     res = bytes()
     if fileName in self.files:
-      tmp = cbash.SendGetLine(self, "FILE cache " + str(self.files[fileName]))
+      tmp = CBash.LoadList(self, "FILE cache " + str(self.files[fileName]))
       size = int(tmp[2].split("/")[0])
       pack = int((size + (self.pack_size - 1)) / self.pack_size)
       for i in range(pack):
         offset = i * self.pack_size
-        res += cbash.SendGetBytes(self, "FILE load " + str(self.pack_size) + " " + str(offset))
+        res += CBash.LoadBytes(self, "FILE load " + str(self.pack_size) + " " + str(offset))
     return res
 
-  def SetTime(bash):
+  def FileLoadString(self, fileName:str) -> str:
+    return CBash.FileLoadBytes(self, fileName).decode("utf-8")
+
+  def SetTime(self):
     now = datetime.utcnow()
     datetimeString = now.strftime("%Y-%m-%d %H:%M:%S")
-    bash.SendGetLine("RTC " + datetimeString)
+    self.LoadList("RTC " + datetimeString)
+    
+  def GetTime(self) -> datetime:
+    res = self.LoadList("RTC")
+    return datetime.strptime(res[1] + " " + res[2], "%Y-%m-%d %H:%M:%S")
+
+  def Reset(self, now:bool=False):
+    text = "PWR reset now" if now else "PWR reset"
+    self.Send(text)
