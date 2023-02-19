@@ -122,13 +122,13 @@ class CBash:
       if time() > timeout: return True
     return False
 
-  def LoadList(self, send:str|bytes) -> list:
+  def LoadList(self, send:str|bytes, values:bool=False) -> list:
     res = self.LoadBytes(send).decode("utf-8").strip()
-    self.Preview(res, CBash.color["resp"], head=True, values=True)
+    self.Preview(res, CBash.color["resp"], head=True, values=values)
     return res.split(" ")
   
   def LoadDict(self, send:str|bytes) -> dict:
-    values = self.LoadList(send)
+    values = self.LoadList(send, True)
     res = {}
     for keyvalue in values:
       if ":" in keyvalue:
