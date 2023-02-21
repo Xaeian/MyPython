@@ -8,6 +8,7 @@ from pathlib import Path
 import codecs
 import re
 import zipfile
+import csv
 from PIL import Image
 
 #------------------------------------------------------------------------------ List
@@ -295,12 +296,12 @@ class file:
   @staticmethod
   def csvLoad(name, delimiter=",") -> list:
     name = name.removesuffix('.csv') + '.csv'
-    print(name)
-    if not os.path.isfile(name):
-      return None
-    with open(name, "r") as file:
-      reader = csv.reader(file, delimiter=delimiter)
-      return list(reader)
+    raw = csv.DictReader(codecs.open(name, "r", "utf-8"))
+    file = []
+    for row in raw:
+      file.append(row)
+    return file
+    
 
 #---------------------------------------------------------------------------------------------------------------------- <--- buffer
 class buffer:

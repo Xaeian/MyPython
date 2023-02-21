@@ -33,6 +33,7 @@ class CBash:
         now = datetime.utcnow() if self.timeUTC else datetime.now()
         strtime = now.strftime(self.timeFormat)
       if self.colored:
+        # TODO: Split \r\n
         if self.timeDisp: strtime = CBash.color["time"] + strtime + " " + color
         words = text.split(" ")
         if head: text = CBash.color["head"] + words.pop(0) + " " + color
