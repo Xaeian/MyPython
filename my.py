@@ -67,7 +67,7 @@ def imageCompress(
     dsc:str="",
     prefix:str="",
     suffix:str="",
-    quality:int=100,
+    quality:int=100, # [%]
     optimize:bool=True,
     scale:int=0,
     width:int=0,
@@ -302,8 +302,8 @@ class file:
       file.append(row)
     return file
     
+#---------------------------------------------------------------------------------------------------------------------- buffer
 
-#---------------------------------------------------------------------------------------------------------------------- <--- buffer
 class buffer:
   def __init__(self, limit:int=64) -> None:
     self.limit = limit
@@ -327,3 +327,4 @@ class buffer:
 
   def __str__(self) -> str:
     return str(self.list)
+  
