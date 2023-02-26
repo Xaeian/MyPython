@@ -43,7 +43,7 @@ class CBash:
             keyvalue = word.split(":")
             text += keyvalue[0] + ":" + CBash.color["value"] + keyvalue[1] + " " + color
           else: text += word + " "
-        text = text.split() + CBash.color["reset"]
+        text = text.strip() + CBash.color["reset"]
       if self.timeDisp: text = strtime + text
       if self.disp: print(text)
       if self.callback: self.callback(text)
