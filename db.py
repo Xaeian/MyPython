@@ -67,7 +67,8 @@ class _DatabaseSQL:
     value = self.getValue(f"""SELECT `AUTO_INCREMENT`
     FROM INFORMATION_SCHEMA.TABLES
     WHERE TABLE_SCHEMA = '{self.db}'
-    AND  TABLE_NAME = '{table}';""")
+    AND TABLE_NAME = '{table}';""")
+    if not value: return 1
     return int(value)
   
   @staticmethod
