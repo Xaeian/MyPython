@@ -163,11 +163,12 @@ class CBash:
   def FileSize(self, fileName:str):
     if fileName in self.files:
       tmp = CBash.LoadList(self, "FILE cache " + str(self.files[fileName]))
-      return int(tmp[2].split("/")[1])
+      tmp = tmp[2].split("/")
+      return (int(tmp[0]), int(tmp[1]))
 
   def FileSave(self, fileName:str, msg:str|bytes, append=False):
     if fileName in self.files:
-      size = self.FileSize(fileName)
+      _, size = self.FileSize(fileName)
       if len(msg) > size:
         self.Error("file-size")
       pack = int((len(msg) + (self.pack_size - 1)) / self.pack_size)
@@ -183,7 +184,7 @@ class CBash:
   def FileLoadBytes(self, fileName:str) -> bytes:
     res = bytes()
     if fileName in self.files:
-      size = self.FileSize(fileName)
+      size, _ = self.FileSize(fileName)
       pack = int((size + (self.pack_size - 1)) / self.pack_size)
       for i in range(pack):
         offset = i * self.pack_size
