@@ -282,14 +282,15 @@ class file:
         section = key[1:-1]
         ini[section] = {}
         continue
-      value = None if len(x) == 1 else x[1].strip()
-      if (value[0] == "'" and value[-1] == "'") or (value[0] == '"' and value[-1] == '"'):
-        value = value[1:-1]
+      if len(x) == 1: value = None
+      else:
+        value = x[1].strip()
+        if (value[0] == "'" and value[-1] == "'") or (value[0] == '"' and value[-1] == '"'): value = value[1:-1]
       if section:
         ini[section][key] = value
       else:
         ini[key] = value
-    return ini     
+    return ini
     
   @staticmethod
   def csvLoad(name, delimiter=",") -> list:
