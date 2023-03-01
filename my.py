@@ -285,7 +285,7 @@ class file:
       if len(x) == 1: value = None
       else:
         value = x[1].strip()
-        if (len(value) > 1) and (value[0] == "'" and value[-1] == "'") or (value[0] == '"' and value[-1] == '"'): value = value[1:-1]
+        if (len(value) > 1) and ((value[0] == "'" and value[-1] == "'") or (value[0] == '"' and value[-1] == '"')): value = value[1:-1]
       if section:
         ini[section][key] = value
       else:
