@@ -1,14 +1,9 @@
 import os, shutil
 import json, csv
-from matplotlib import pyplot as plt
-from glob import glob
-import itertools
-from IPython import get_ipython
+import codecs, re
+# from IPython import get_ipython
 from pathlib import Path
-import codecs
-import re
 import zipfile
-import csv
 from PIL import Image
 
 #------------------------------------------------------------------------------ List
@@ -16,14 +11,17 @@ from PIL import Image
 def nbrRange(value:float|int, minv:float|int, maxv:float|int):
   return minv if value < minv else maxv if value > maxv else value
 
-def inIpynb():
-  cfg = get_ipython()
-  return True if cfg else False
+# def inIpynb():
+#   cfg = get_ipython()
+#   return True if cfg else False
 
-def transposeList(array:list):
-  return list(map(list, itertools.zip_longest(*array, fillvalue=None)))
+# import itertools
+
+# def transposeList(array:list):
+#   return list(map(list, itertools.zip_longest(*array, fillvalue=None)))
 
 # only list od dicts to dict od lists
+
 def transposeDicts(array:list):
   res = {}
   for row in array:
