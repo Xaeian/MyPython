@@ -1,4 +1,3 @@
-from stdlib import *
 import numpy as np
 import pandas as pd
 from pandas.api.types import is_datetime64_any_dtype
@@ -7,6 +6,23 @@ from matplotlib.figure import Figure
 from matplotlib.axes import Axes
 import matplotlib.dates as mdates
 from collections.abc import Iterable
+from IPython import get_ipython
+import my
+
+
+
+# 
+
+def inIpynb():
+  cfg = get_ipython()
+  return True if cfg else False
+
+import itertools
+
+
+
+only list od dicts to dict od lists
+
 
 #----------------------------------------------------------------------------------------------------------------------
 
@@ -232,7 +248,7 @@ class Plot():
   
   def Save(self, name:str, format:str="png", dir:str="./{format}", display:Plotsize|None=None):
     dir = dir.replace("{format}", format)
-    folder.MakeSure(dir)
+    my.folder.create(dir)
     count = self.AxesCount()
     for i in range(count):
       with plt.style.context(self.styleSave):
@@ -246,7 +262,7 @@ class Plot():
   
   def SaveView(self, name:str, format:str="png", dir:str="./{format}", display:Plotsize|None=None):
     dir = dir.replace("{format}", format)
-    folder.MakeSure(dir)
+    my.folder.create(dir)
     if not self.fnc:
       return self
     fig = self.fnc(self.styleSave)
