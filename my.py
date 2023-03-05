@@ -11,8 +11,8 @@ from PIL import Image
 def nbrRange(value:float|int, minv:float|int, maxv:float|int):
   return minv if value < minv else maxv if value > maxv else value
 
-def transposeList(array:list):
-  return list(map(list, itertools.zip_longest(*array, fillvalue=None)))
+# def transposeList(array:list):
+#   return list(map(list, itertools.zip_longest(*array, fillvalue=None)))
 
 def transposeDicts(array:list):
   res = {}

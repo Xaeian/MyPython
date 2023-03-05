@@ -9,20 +9,9 @@ from collections.abc import Iterable
 from IPython import get_ipython
 import my
 
-
-
-# 
-
 def inIpynb():
   cfg = get_ipython()
   return True if cfg else False
-
-import itertools
-
-
-
-only list od dicts to dict od lists
-
 
 #----------------------------------------------------------------------------------------------------------------------
 
