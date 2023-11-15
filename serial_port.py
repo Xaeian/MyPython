@@ -237,7 +237,7 @@ class REC(SerialPort):
       self.leftover = ""
       lines = lines[::-1]
       if lines:
-        if regex and re.match(regex, lines[0]):
+        if regex and not re.match(regex, lines[0]):
           self.leftover = lines.pop(0)
       first = True
       for line in lines:
