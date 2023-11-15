@@ -208,16 +208,18 @@ class REC(SerialPort):
     super().print(text, prefix)
   
   def scan(self):
-    if self.err_time and time.time() > self.err_time + self.err_delay: return
+    if self.err_time and time.time() > self.err_time:
+      self.disconnect()
+      self.print_error(f"Serial port {self.port} not responding")
+      return
     if not self.connect(): return
     try:
       self.flush(self.color)
-    except:
-      self.print_error(f"Serial port {self.port} not responding")
-      self.err_time = time.time()
+      self.err_time = time.time() + self.err_delay
+    except: pass
 
   def read_value(self):
-    if self.err_time and time.time() > self.err_time + self.err_delay:
+    if self.err_time and time.time() > self.err_time:
       self.disconnect()
       self.print_error(f"Serial port {self.port} not responding")
       self.value = None
@@ -225,11 +227,14 @@ class REC(SerialPort):
     if not self.connect():
       self.value = None
       return None
-    lines = self.readlines(self.color)
-    value = None
-    for line in lines.reverse():
-      try: value = float(line.strip())
-      except: pass
-    if value is None:
-      self.err_time = time.time()
+    try:
+      lines = self.readlines(self.color)
+      value = None
+      for line in lines.reverse():
+        try: value = float(line.strip())
+        except: pass
+      if value is not None:
+        self.value = value
+        self.err_time = time.time() + self.err_delay
+    except: pass
     return self.value
