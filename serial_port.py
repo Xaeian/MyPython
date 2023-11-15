@@ -200,6 +200,7 @@ class REC(SerialPort):
     self.err_delay:float = err_delay
     self.err_time:float = 0
     self.value:float|None = None
+    self.leftover = ""
     super().__init__(port, band, timeout, buffer_size,
       print_console, print_file, time_disp, time_utc, time_format)
   
@@ -222,19 +223,35 @@ class REC(SerialPort):
     if self.err_time and time.time() > self.err_time:
       self.disconnect()
       self.print_error(f"Serial port {self.port} not responding")
+      self.leftover = ""
       self.value = None
       return None
     if not self.connect():
       self.value = None
+      self.leftover = ""
       return None
     try:
-      lines = self.readlines(self.color)[::-1]
+      lines = self.readlines(self.color)
+      if lines and self.leftover:
+        if regex and re.match(regex, lines[0]):
+          lines[0] = self.leftover + lines[0]
+      self.leftover = ""
+      lines = lines[::-1]
+      if lines:
+        if regex and re.match(regex, lines[0]):
+          self.leftover = lines.pop(0)
+      first = True
       for line in lines:
         try:
           if regex and re.match(regex, line):
             self.value = float(line)
             self.err_time = time.time() + self.err_delay
+          elif first:
+            self.leftover = line
+          first = False
           break
         except: pass
-    except: pass
+    except:
+      self.leftover = ""
+      pass
     return self.value
