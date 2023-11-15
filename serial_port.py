@@ -148,7 +148,7 @@ class SerialPort():
       resp = self.check_address(resp)
     if not resp:
       return None
-    lines = re.sub(b'[\r\n]+', b'\n', resp).split(b'\n')
+    lines = re.sub(b'[\r\n]+', b'\n', resp).strip(b'\n').split(b'\n')
     resp = []
     for line in lines:
       if conv2str:
@@ -228,13 +228,10 @@ class REC(SerialPort):
       self.value = None
       return None
     try:
-      lines = self.readlines(self.color)
-      value = None
-      for line in lines.reverse():
-        try: value = float(line.strip())
-        except: pass
-      if value is not None:
-        self.value = value
-        self.err_time = time.time() + self.err_delay
+      self.readline(Color.FLUSH)
+      strvalue = self.readline(self.color)
+      self.clear()
+      self.value = float(strvalue)
+      self.err_time = time.time() + self.err_delay        
     except: pass
     return self.value
