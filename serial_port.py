@@ -218,7 +218,7 @@ class REC(SerialPort):
       self.err_time = time.time() + self.err_delay
     except: pass
 
-  def read_value(self):
+  def read_value(self, regex:str|None=None):
     if self.err_time and time.time() > self.err_time:
       self.disconnect()
       self.print_error(f"Serial port {self.port} not responding")
@@ -228,12 +228,12 @@ class REC(SerialPort):
       self.value = None
       return None
     try:
-      # pattern = re.compile(r'^-?[1-9](\.\d+)?([eE][+-]?\d+)?$')
       lines = self.readlines(self.color)[::-1]
       for line in lines:
         try:
-          self.value = float(line)
-          self.err_time = time.time() + self.err_delay
+          if regex and re.match(regex, line):
+            self.value = float(line)
+            self.err_time = time.time() + self.err_delay
           break
         except: pass
     except: pass
