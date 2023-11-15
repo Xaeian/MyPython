@@ -229,15 +229,12 @@ class REC(SerialPort):
       return None
     try:
       # pattern = re.compile(r'^-?[1-9](\.\d+)?([eE][+-]?\d+)?$')
-      lines = self.readlines(self.color)
-      value = None
-      for line in lines.reverse():
+      lines = self.readlines(self.color)[::-1]
+      for line in lines:
         try:
-          value = float(line)
+          self.value = float(line)
+          self.err_time = time.time() + self.err_delay
           break
         except: pass
-      if value is not None:
-        self.value = value
-        self.err_time = time.time() + self.err_delay
     except: pass
     return self.value
