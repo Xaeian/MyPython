@@ -228,9 +228,8 @@ class REC(SerialPort):
       self.value = None
       return None
     try:
-      self.readline(Color.FLUSH)
       strvalue = self.readline(self.color)
-      self.clear()
+      self.flush()
       self.value = float(strvalue)
       self.err_time = time.time() + self.err_delay        
     except: pass
