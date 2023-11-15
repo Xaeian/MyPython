@@ -1,8 +1,6 @@
 import serial, time, re
 from datetime import datetime
 
-# TODO: data print limit
-
 """
 It allows you to communicate with the serial port while viewing it at the same time
 https://github.com/Xaeian/
