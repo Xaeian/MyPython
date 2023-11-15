@@ -228,9 +228,16 @@ class REC(SerialPort):
       self.value = None
       return None
     try:
-      strvalue = self.readline(self.color)
-      self.flush()
-      self.value = float(strvalue)
-      self.err_time = time.time() + self.err_delay        
+      # pattern = re.compile(r'^-?[1-9](\.\d+)?([eE][+-]?\d+)?$')
+      lines = self.readlines(self.color)
+      value = None
+      for line in lines.reverse():
+        try:
+          value = float(line)
+          break
+        except: pass
+      if value is not None:
+        self.value = value
+        self.err_time = time.time() + self.err_delay
     except: pass
     return self.value
