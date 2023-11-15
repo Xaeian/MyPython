@@ -233,8 +233,7 @@ class REC(SerialPort):
     try:
       lines = self.readlines(self.color)
       if lines and self.leftover:
-        if regex and re.match(regex, lines[0]):
-          lines[0] = self.leftover + lines[0]
+        lines[0] = self.leftover + lines[0]
       self.leftover = ""
       lines = lines[::-1]
       if lines:
