@@ -1,18 +1,20 @@
-import os, shutil
-import json, csv
-import codecs, re
-
+import os, shutil, codecs, re, json, csv, itertools, zipfile, calendar, io
+from datetime import datetime, timedelta
 from pathlib import Path
-import zipfile
-from PIL import Image
 
-#------------------------------------------------------------------------------ List
+"""
+Some code snippets are a piece of shit,
+but sharing these modules allows me to put them in different projects.
+I hope someday they will be better
+https://github.com/Xaeian/
+2023-11-08 12:50:00
+"""
 
 def nbrRange(value:float|int, minv:float|int, maxv:float|int):
   return minv if value < minv else maxv if value > maxv else value
 
-# def transposeList(array:list):
-#   return list(map(list, itertools.zip_longest(*array, fillvalue=None)))
+def transpose_list(array:list):
+  return list(map(list, itertools.zip_longest(*array, fillvalue=None)))
 
 def transposeDicts(array:list):
   res = {}
@@ -22,6 +24,16 @@ def transposeDicts(array:list):
         res[key] = []
       res[key].append(value)
   return res
+
+def to_csv(data:list[dict], delimiter:str=",") -> str:
+  output = io.StringIO()
+  keys = list(data[0].keys())
+  writer = csv.DictWriter(output, fieldnames=keys, delimiter=delimiter)
+  writer.writeheader()
+  writer.writerows(data)
+  csv_string = output.getvalue()
+  output.close()
+  return csv_string
 
 def setList(vect:list, index:int, value:any):
   try:
@@ -49,47 +61,6 @@ def toList(content:any):
     return [content]
 
 #------------------------------------------------------------------------------ files
-
-# for e.g.
-# my.imageCompress(src="./image.jpg", prefix="compress-", scale=0.5, quality=30)
-def imageCompress(
-    src:str,
-    dsc:str="",
-    prefix:str="",
-    suffix:str="",
-    quality:int=100, # [%]
-    optimize:bool=True,
-    scale:int=0,
-    width:int=0,
-    height:int=0,
-    format:str=""
-  ):
-  img = Image.open(src)
-  resize = True
-  if scale:
-    width, height = img.size[0] * scale, img.size[1] * scale
-  elif width:
-    height = int(width * img.size[1] / img.size[0])
-  elif height:
-    width = int(height * img.size[0] / img.size[1])
-  else:
-    resize = False
-  if resize:
-    img = img.resize((width, height),Image.Resampling.LANCZOS)
-  if prefix or suffix:
-    dir = os.path.dirname(src)
-    name, ext = os.path.splitext(os.path.basename(src))
-    dsc = dir + "/" + prefix + name + suffix + ext
-  if not format:
-    name, ext = os.path.splitext(os.path.basename(dsc))
-    format = ext.lstrip(".")
-  
-    
-  format = format.upper()
-  format = "JPEG" if format == "JPG" else format
-  # print(format)
-  # exit()
-  img.save(dsc, format, optimize=optimize, quality=quality)
 
 class folder:
   @staticmethod
@@ -132,7 +103,7 @@ class folder:
           )
   
   @staticmethod
-  def through(scr:str, dsc:str, fnc):
+  def exec_through(scr:str, dsc:str, fnc):
     for name in os.listdir(scr):
       scrf = scr + "/" + name
       dscf = dsc + "/" + name
@@ -141,54 +112,24 @@ class folder:
       else:
         if not os.path.exists(dscf):
           os.makedirs(dscf)
-        folder.through(scrf, dscf, fnc)
+        folder.exec_through(scrf, dscf, fnc)
 
   @staticmethod
   def copy(scr:str, dsc:str):
-    folder.through(scr, dsc, shutil.copy)
-
-  def imageCompress(
-    scr:str,
-    dsc:str,
-    exts:list[str],
-    quality:int=100,
-    optimize:bool=True,
-    scale:int=0,
-    width:int=0,
-    height:int=0
-  ):
-    def fnc(fsrc:str, fdsc:str):
-      if(exts):
-        go = False
-        for ext in exts:
-          if fsrc.lower().endswith("." + ext):
-            go = True
-      else:
-        go = True
-      if go:
-        imageCompress(
-          src=fsrc,
-          dsc=fdsc,
-          quality=quality,
-          optimize=optimize,
-          scale=scale,
-          width=width,
-          height=height
-        )
-    folder.through(scr, dsc, fnc)
+    folder.exec_through(scr, dsc, shutil.copy)
 
 class file:
   @staticmethod
-  def Clear(name):
+  def clear(name):
     file.Save(name, "")
   
   @staticmethod
-  def Delete(name):
+  def delete(name):
     if os.path.exists(name):
       os.remove(name)
 
   @staticmethod
-  def Load(name:str) -> str:
+  def load(name:str) -> str:
     if name.find('.') == -1:
       name += ".txt"
     openFile = codecs.open(name, "r+", "utf-8")
@@ -197,7 +138,7 @@ class file:
     return string
   
   @staticmethod
-  def linesLoad(name:str) -> list:
+  def load_lines(name:str) -> list:
     if name.find('.') == -1:
       name += ".out"
     openFile = codecs.open(name, "r+", "utf-8")
@@ -206,30 +147,30 @@ class file:
     return lines
 
   @staticmethod
-  def Save(name:str, string:str):
+  def save(name:str, string:str):
     folder.create(os.path.dirname(name))
     openFile = codecs.open(name, "w+", "utf-8")
     openFile.write(string)
     openFile.close()
 
   @staticmethod
-  def binLoad(name:str) -> bytes:
+  def load_bin(name:str) -> bytes:
     name = name.removesuffix('.bin') + '.bin'
-    openFile = codecs.open(name, "rb+", "utf-8")
+    openFile = codecs.open(name, "rb+")
     bytes = openFile.read()
     openFile.close()
     return bytes
 
   @staticmethod
-  def binSave(name:str, data:bytes):
+  def save_bin(name:str, data:bytes):
     name = name.removesuffix('.bin') + '.bin'
     folder.create(os.path.dirname(name))
-    openFile = codecs.open(name, "wb+", "utf-8")
+    openFile = open(name, "wb+")
     openFile.write(data)
     openFile.close()
 
   @staticmethod
-  def jsonLoad(name:str, otherwise:None|list|dict=None) -> dict|list|dict:
+  def load_json(name:str, otherwise:None|list|dict=None) -> dict|list|dict:
     name = name.removesuffix('.json') + '.json'
     if not os.path.isfile(name):
       return otherwise
@@ -243,79 +184,248 @@ class file:
     return content
 
   @staticmethod
-  def jsonSave(name:str, content:dict):
+  def save_json(name:str, content:dict):
     name = name.removesuffix('.json') + '.json'
     openFile = codecs.open(name, "w+", "utf-8")
     openFile.write(json.dumps(content))
     openFile.close()
 
   @staticmethod
-  def jsonSavePrettie(name:str, content:dict):
+  def save_json_prettie(name:str, content:dict):
     name = name.removesuffix('.json') + '.json'
     openFile = codecs.open(name, "w+", "utf-8")
     openFile.write(json.dumps(content, indent=2))
     openFile.close()
-    
+
   @staticmethod
-  def iniLoad(name:str) -> dict:
+  def load_ini(name: str) -> dict:
     name = name.removesuffix('.ini') + '.ini'
-    string = file.Load(name)
-    string = re.sub("( *\r?\n *)+", "\n", string)
+    if not os.path.exists(name):
+      return {}
+    try:
+      with open(name, 'r+') as file:
+        string = file.read()
+    except FileNotFoundError:
+      raise FileNotFoundError(f"Plik '{name}' nie istnieje.")
+    string = re.sub(r"(;|#).*", "", string)
+    string = re.sub(r"( *\r?\n *)+", "\n", string)
     lines = string.split("\n")
     ini = {}
     section = None
     for line in lines:
       line = line.strip()
-      if not line or line[0] == ";" or line[0] == "#":
+      if not line:
         continue
-      x = line.split("=", 1)
-      key = x[0].strip()
-      if key[0] == "[" and key[-1] == "]":
-        section = key[1:-1]
+      if line.startswith("[") and line.endswith("]"):
+        section = line[1:-1]
         ini[section] = {}
         continue
-      if len(x) == 1: value = None
-      else:
-        value = x[1].strip()
-        if (len(value) > 1) and ((value[0] == "'" and value[-1] == "'") or (value[0] == '"' and value[-1] == '"')): value = value[1:-1]
+      key_value = line.split("=", 1)
+      key = key_value[0].strip()
+      value = key_value[1].strip() if len(key_value) > 1 else None
+      isstr = False
+      if value and (value[0] == value[-1]) and (value[0] in ('"', "'")):
+        value = value[1:-1]
+        isstr = True
+      if not isstr:
+        if not value: value = None
+        elif value.lower() == "true": value = True
+        elif value.lower() == "false": value = False
+        else:
+          try: value = int(value)
+          except:
+            try: value = float(value)
+            except: value = value
       if section:
         ini[section][key] = value
       else:
         ini[key] = value
     return ini
-    
+
   @staticmethod
-  def csvLoad(name, delimiter=",") -> list:
+  def save_ini(name: str, data: dict):
+    name = name.removesuffix('.ini') + '.ini'
+    with open(name, 'w') as file:
+      for left, right in data.items():
+        if type(right) is dict:
+          section = left
+          section_data = right
+          file.write(f"[{section}]\n")
+          for key, value in section_data.items():
+            if value is None:
+              file.write(f"{key} =\n")
+            else:
+              if type(value) is str: value = '"' + value + '"'
+              file.write(f"{key} = {value}\n")
+        else:
+          key = left
+          value = right
+          if value is None:
+            file.write(f"{key} =\n")
+          else:
+            if type(value) is str: value = '"' + value + '"'
+            file.write(f"{key} = {value}\n")
+
+  @staticmethod
+  def load_csv(name:str, delimiter=",") -> list:
     name = name.removesuffix('.csv') + '.csv'
     raw = csv.DictReader(codecs.open(name, "r", "utf-8"))
     file = []
     for row in raw:
       file.append(row)
     return file
-    
-#---------------------------------------------------------------------------------------------------------------------- buffer
-
-class buffer:
-  def __init__(self, limit:int=64) -> None:
-    self.limit = limit
-    self.list = []
-
-  def Push(self, value:any) -> None:
-    if isinstance(value, list):
-      self.list += value
-    self.list.append(value)
-    while len(self.list) > self.limit:
-      self.list.pop(0)
-
-  def Clear(self):
-    self.list.clear
-
-  def String(self, separator="\n") -> str:
-    string = ""
-    for value in self.list:
-      string += str(value) + separator
-    return string.strip()
-
-  def __str__(self) -> str:
-    return str(self.list)
   
+  def add_to_csv(name:str, data_row:dict|list=[]):
+    name = name.removesuffix(".csv") + ".csv"
+    if not os.path.isfile(name):
+      with open(name, "w", newline="") as nowy_plik_csv:
+        writer = csv.writer(nowy_plik_csv)
+        if type(data_row) is dict:
+          writer.writerow(data_row.keys())
+    with open(name, "a", newline="") as plik_csv:
+      writer = csv.writer(plik_csv)
+      if type(data_row) is dict:
+        data_row = data_row.values()
+      writer.writerow(data_row)
+
+#-------------------------------------------------------------------------------------------------- datetime  
+
+class idt(datetime):
+
+  def interval(interval:str="", dt:None|datetime=None):
+    dt = idt.now() if dt is None else dt
+    value = re.findall(r"\-?[0-9]*\.?[0-9]+", interval)
+    if not value: return dt
+    value = float(value[0])
+    factor = re.sub("[^a-z]", "", interval.lower())
+    if factor == "y" or factor == "mo":
+      if factor == "y": value *= 12
+      month = dt.month - 1 + int(value)
+      year = dt.year + month // 12
+      month = month % 12 + 1
+      day = min(dt.day, calendar.monthrange(year, month)[1])
+      return dt.replace(year, month, day)
+    match factor:
+      case "w": dt += timedelta(weeks=value)
+      case "d": dt += timedelta(days=value)
+      case "h": dt += timedelta(hours=value)
+      case "m": dt += timedelta(minutes=value)
+      case "s": dt += timedelta(seconds=value)
+      case "ms": dt += timedelta(milliseconds=value)
+      case "us": dt += timedelta(microseconds=value)
+    return dt
+
+  def intervals(intervals:str=""):
+    dt = idt.now()
+    for interval in intervals.split():
+      dt = idt.interval(interval, dt)
+    return dt
+
+  def is_interval(text:str):
+    if re.search(r"^(\-|\+)?[0-9]*\.?[0-9]+(y|mo|w|d|h|m|s|ms|µs|us)$", text.strip()): return True
+    else: return False
+
+  def is_intervals(text:str):
+    if re.search(r"^((\-|\+)?[0-9]*\.?[0-9]+(y|mo|w|d|h|m|s|ms|µs|us) ?)*$", text.strip()): return True
+    else: return False
+
+  def create(some:str|int|float|datetime|None="now"):
+    if some is None: return None
+    if type(some) is datetime: return some
+    some = str(some).strip()
+    if some.lower() == "now": return idt.now()
+    if some.replace(".", "", 1).isdigit(): return idt.fromtimestamp(float(some))
+    if idt.is_interval(some): return idt.interval(some)
+    if idt.is_intervals(some): return idt.intervals(some)
+    some = some.replace("T", "")
+    if re.search(r"^(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})$", some): return idt.strptime(some, '%Y-%m-%d %H:%M:%S')
+    if re.search(r"^(\d{2}/\d{2}/\d{2} \d{2}:\d{2}:\d{2})$", some): return idt.strptime(some, '%m/%d/%y %H:%M:%S')
+    if re.search(r"^(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}.(\d{3}|\d{6}))$", some): return idt.strptime(some, '%Y-%m-%d %H:%M:%S.%f')
+    if re.search(r"^(\d{2}/\d{2}/\d{2} \d{2}:\d{2}:\d{2}.(\d{3}|\d{6}))$", some): return idt.strptime(some, '%m/%d/%y %H:%M:%S.%f')    
+    else: return None
+
+  def __str__(self):
+    return self.strftime("%Y-%m-%d %H:%M:%S.%f")
+
+# ----------------------------------------------------------------------------- String
+
+def split_str(string:str, split:str= " ", string_char:str='"', escape_char:str = "\\") -> list:
+  def trim(value:str) -> str:
+    if value[0] == string_char and value[-1] == string_char: return value[1:-1]
+    else: return value
+  array:list = []
+  k:int = 0
+  mute:bool = False
+  mute_start:bool = False
+  mute_end:bool = False
+  escape:bool = False
+  inc:int = 0
+  count:int = len(split)
+  val:str = ""
+  i:int = 0
+  while i < len(string):
+    if string[i] == string_char:
+      if not mute:
+        mute_start = True
+        mute = True
+        if mute_end == True:
+          array.append(trim(val))
+          val = ""
+    mute_end = False
+    if not mute:
+      j = 0
+      go_continue = False
+      while j < count:
+        if string[i + j] == split[j]:
+          if j + 1 == count:
+            if not inc: val = trim(val)
+            inc = 0
+            k += 1
+            array.append(val)
+            val = ""
+            i += j
+            go_continue = True
+            break # continue 2
+        else:
+          break
+        j += 1
+      if go_continue:
+        i += 1
+        continue
+      inc += 1      
+    if mute and not mute_start:
+      if string[i] == escape_char: escape = True
+      elif not escape and string[i] == string_char:
+        mute = False
+        mute_end = True
+      else: escape = False
+    if not escape:
+      val += string[i]
+    mute_start = False
+    if i + 1 == len(string) and not inc:
+      val = trim(val)
+    i += 1
+  array.append(val)
+  return array
+
+# test = 'Hello "world" this "\\"" is """ a" "test string" with "escape\\"s: " char'
+# result = split_str(test)
+# print(result)
+
+def split_sql(sqls):
+  sqls = split_str(sqls, ";", "'")
+  for i, sql in enumerate(sqls):
+    sql = re.sub(r"[\n\r]+", "", sql)
+    sql = re.sub(r"[\ ]+", " ", sql)
+    sql = re.sub(r"\ ?\(\ ?", "(", sql)
+    sql = re.sub(r"\ ?\)\ ?", ")", sql)
+    sql = re.sub(r"\ ?\,\ ?", ",", sql)
+    sql = re.sub(r"\ ?\=\ ?", "=", sql)
+    sqls[i] = sql
+  output = []
+  i = 0
+  for sql in sqls:
+    if sql and sql != " ":
+      output.append(sql + ";")
+      i += 1
+  return output

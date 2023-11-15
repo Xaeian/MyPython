@@ -6,12 +6,12 @@ from matplotlib.figure import Figure
 from matplotlib.axes import Axes
 import matplotlib.dates as mdates
 from collections.abc import Iterable
-from IPython import get_ipython
+# from IPython import get_ipython
 import my
 
-def inIpynb():
-  cfg = get_ipython()
-  return True if cfg else False
+# def inIpynb():
+#   cfg = get_ipython()
+#   return True if cfg else False
 
 #----------------------------------------------------------------------------------------------------------------------
 
@@ -52,7 +52,8 @@ class Plot():
     self.collection = []
     self.ax = 0
     self.fnc = None
-    self.sizeView = Plotsize(6, 3, 72) if inIpynb() else Plotsize(14.5, 6.5, 100)
+    # self.sizeView = Plotsize(6, 3, 72) if inIpynb() else Plotsize(14.5, 6.5, 100)
+    self.sizeView = Plotsize(14.5, 6.5, 100)
     self.sizeSave = Plotsize(5.8, 4.15, 600) if args["format"] == "A5" else Plotsize()
     self.styleDisp = "bmh"
     self.styleSave = "seaborn-whitegrid"
@@ -140,10 +141,14 @@ class Plot():
     return self
   
   def __AxesAppend(self, ax:Axes, x, y, mode:str="plot", option:dict={}):
+    if type(x) is pd.core.series.Series:
+      x = x.values
     if mode == "plot":
+      # ax.plot(x, y, **option)
       ax.plot(x, y, **option)
     elif mode == "scatter":
-      ax.scatter(x, y, **option)
+      # ax.scatter(x, y, **option)
+      ax.scatter(x.values, y, **option)
   
   def Draw(self, fig:Figure, *axes:list[Axes]) -> Figure:
     if("title" in self.args):
@@ -164,9 +169,9 @@ class Plot():
           option["label"] = serie["name"]
           lebel = False
         self.__AxesAppend(ax, x, y, coll.mode, option)
-      pdx = pd.DataFrame(x)
-      if(is_datetime64_any_dtype(pdx)):
-        ax.xaxis.set_major_formatter(mdates.DateFormatter(self.args["timeFormat"]))
+      if(is_datetime64_any_dtype(x)):
+        # ax.xaxis.set_major_locator(mdates.AutoDateLocator())
+        ax.xaxis.set_major_formatter(mdates.DateFormatter(self.args["time"]))
       if(len(self.series) > 1):
         ax.legend(loc="best", title=self.label_legend)
       ax.set_xlabel(self.label_x)
@@ -218,6 +223,7 @@ class Plot():
       gs = fig.add_gridspec(self.AxesCount(), hspace=0.02)
       axes = gs.subplots(sharex=True, sharey=False)
     self.fnc = self.__ViewSharing
+    if not isinstance(axes, np.ndarray): axes = [axes]
     for ax in axes:
       ax.label_outer()
     return self.Draw(fig, *axes)
@@ -257,3 +263,38 @@ class Plot():
     fig = self.fnc(self.styleSave)
     self.__Save(fig, f"{dir}/{name}.{format}", display)
     return self
+
+# import numpy as np
+# import scipy.stats as stats
+# from plot import Plot
+
+# data = []
+# time = []
+
+# opt = {
+#   "max": 100,
+#   "min": -100, # range = max - min
+#   "sigma": 0.3, # trueSigma = range * sigma
+#   "gain": 0.05 # # trueGain = range * gain
+# }
+
+# def normMinMax(y:np.array):
+#   maxY = max(y)
+#   minY = min(y)
+#   return (y - minY) / (maxY - minY)
+
+# r = opt["max"] - opt["min"]
+# u = opt["min"] + (r / 2)
+# sigma = r * opt["sigma"]
+# gain = r * opt["gain"]
+
+# x = np.arange(opt["min"], opt["max"], 0.1)
+# down = stats.norm.pdf(x, opt["min"], sigma)
+# up = stats.norm.pdf(x, opt["max"], sigma)
+# down = gain * normMinMax(down)
+# up = gain * normMinMax(up)
+
+# plot = Plot("x", "y")
+# plot.Add("down", x, down)
+# plot.Add("up", x, up)
+# plot.View()

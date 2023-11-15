@@ -50,7 +50,8 @@ class CRC:
     remainder &= CRC_MASK[self.width]
     if self.reflectOut: remainder = ReflectBit(remainder, self.width)
     remainder = remainder ^ self.xor
-    if self.invertOut: self.toInt(bytes(reversed(self.toBytes(remainder))));
+    if self.invertOut: remainder = self.toInt(bytes(reversed(self.toBytes(remainder))))
+    return remainder
   
   def toBytes(self, crc:int) -> bytes:
     return crc.to_bytes(int(self.width / 8), byteorder="big")
