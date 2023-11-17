@@ -75,7 +75,7 @@ class SerialPort():
       str_address = "0x%0.2X" % self.address
       text = f"{Color.ADDR}{str_address}{Color.END} {text}"      
     if self.print_file:
-      with open(self.print_file, 'a') as file:
+      with open(self.print_file, 'a', encoding="utf-8") as file:
         print(text, file=file)
     if self.print_console:
       print(text)

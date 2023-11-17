@@ -203,7 +203,7 @@ class file:
     if not os.path.exists(name):
       return {}
     try:
-      with open(name, 'r+') as file:
+      with open(name, 'r+', encoding="utf-8") as file:
         string = file.read()
     except FileNotFoundError:
       raise FileNotFoundError(f"Plik '{name}' nie istnieje.")
@@ -245,7 +245,7 @@ class file:
   @staticmethod
   def save_ini(name: str, data: dict):
     name = name.removesuffix('.ini') + '.ini'
-    with open(name, 'w') as file:
+    with open(name, 'w', encoding="utf-8") as file:
       for left, right in data.items():
         if type(right) is dict:
           section = left
@@ -341,7 +341,7 @@ class idt(datetime):
     if re.search(r"^(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})$", some): return idt.strptime(some, '%Y-%m-%d %H:%M:%S')
     if re.search(r"^(\d{2}/\d{2}/\d{2} \d{2}:\d{2}:\d{2})$", some): return idt.strptime(some, '%m/%d/%y %H:%M:%S')
     if re.search(r"^(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}.(\d{3}|\d{6}))$", some): return idt.strptime(some, '%Y-%m-%d %H:%M:%S.%f')
-    if re.search(r"^(\d{2}/\d{2}/\d{2} \d{2}:\d{2}:\d{2}.(\d{3}|\d{6}))$", some): return idt.strptime(some, '%m/%d/%y %H:%M:%S.%f')    
+    if re.search(r"^(\d{2}/\d{2}/\d{2} \d{2}:\d{2}:\d{2}.(\d{3}|\d{6}))$", some): return idt.strptime(some, '%m/%d/%y %H:%M:%S.%f')
     else: return None
 
   def __str__(self):
