@@ -139,8 +139,6 @@ class file:
   
   @staticmethod
   def load_lines(name:str) -> list:
-    if name.find('.') == -1:
-      name += ".out"
     openFile = codecs.open(name, "r+", "utf-8")
     lines = list(openFile.readlines())
     openFile.close()
@@ -151,6 +149,13 @@ class file:
     folder.create(os.path.dirname(name))
     openFile = codecs.open(name, "w+", "utf-8")
     openFile.write(string)
+    openFile.close()
+
+  @staticmethod
+  def save_lines(name: str, lines: list) -> None:
+    folder.create(os.path.dirname(name))
+    openFile = codecs.open(name, "w", "utf-8")
+    openFile.writelines(lines)
     openFile.close()
 
   @staticmethod

@@ -10,7 +10,7 @@ from collections.abc import Iterable
 import my
 
 # def inIpynb():
-#   cfg = get_ipython()
+#   cfg = get_ipython()plot
 #   return True if cfg else False
 
 #----------------------------------------------------------------------------------------------------------------------
@@ -56,7 +56,7 @@ class Plot():
     self.sizeView = Plotsize(14.5, 6.5, 100)
     self.sizeSave = Plotsize(5.8, 4.15, 600) if args["format"] == "A5" else Plotsize()
     self.styleDisp = "bmh"
-    self.styleSave = "seaborn-whitegrid"
+    self.styleSave = "seaborn-v0_8-whitegrid"
     self.phantom = [""]
     self.colorNext = True
     self.Subplots()
@@ -109,8 +109,8 @@ class Plot():
   def Add(self, label:str|list, *series:list[list]):
     for iax, mode in enumerate(self.phantom):
       serie = { "x":[], "y":[], "ax": self.ax + iax, "xmin": self.xmin, "xmax": self.xmax }
-      serie["name"] = label if type(label) == str else label[0]
-      serie["unit"] = "" if type(label) == str else label[1]
+      serie["name"] = label if type(label) is str else label[0]
+      serie["unit"] = "" if type(label) is str else label[1]
       serie["logx"] = True if "x" in mode else False
       serie["logy"] = True if "y" in mode else False
       for i in range(0, len(series), 2):
@@ -148,7 +148,7 @@ class Plot():
       ax.plot(x, y, **option)
     elif mode == "scatter":
       # ax.scatter(x, y, **option)
-      ax.scatter(x.values, y, **option)
+      ax.scatter(x, y, **option)
   
   def Draw(self, fig:Figure, *axes:list[Axes]) -> Figure:
     if("title" in self.args):
@@ -166,7 +166,7 @@ class Plot():
         if(self.colorNext):
           option["color"] = "C" + str(i)
         if lebel:
-          option["label"] = serie["name"]
+          option["label"] = serie["name"] + (" [" + serie["unit"] + "]" if serie["unit"] else "")
           lebel = False
         self.__AxesAppend(ax, x, y, coll.mode, option)
       if(is_datetime64_any_dtype(x)):
