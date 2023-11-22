@@ -192,7 +192,7 @@ class file:
   def save_json(name:str, content:dict):
     name = name.removesuffix('.json') + '.json'
     openFile = codecs.open(name, "w+", "utf-8")
-    openFile.write(json.dumps(content))
+    openFile.write(json.dumps(content, separators=(",", ":")))
     openFile.close()
 
   @staticmethod
